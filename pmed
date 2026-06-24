@@ -19,4 +19,5 @@ my $its = @its;
 my $med = $its[$its/2];
 my $min = $its[0];
 my $max = $its[-1];
+
 print "$med   $min   $max   $its   $all\n";

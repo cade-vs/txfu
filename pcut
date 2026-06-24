@@ -20,7 +20,8 @@ options:
     -J        -- use default (debug) join string ' <|> '
     -d        -- debug mode
     -o        -- do nothing, print unmodified input
-    -s fields -- sort output by listed fields in the order given
+    -p        -- strip leading and trailing whitespace before processing
+    -s fields -- sort output by joined listed fields
     -r        -- reverse sort
     -n        -- numeric sort
     -a        -- sample first few lines to display indexes
@@ -41,13 +42,18 @@ notes:
   * -a will override all of the rest options, idea is to check indexes 
              without losing current command line
   * -e and -t can be used simultaneously but they will limit head and tail 
-             parts from the same stram, not the head part of the tail or the
+             parts from the same stream, not the head part of the tail or the
              tail part of the head...
   * -e is cheap and fast
   * -t is uses memory (like -s) and is slow(er)
   * -e can modify -a output but needs to be after -a
   * -k -k has no effect on -a when lines contain only delimiters
   * -e and -t will not see blank lines if -k or -k -k are in use
+issues/todo:
+  * -e and -t should use the least required memory
+author:
+  2025 (c) Vladi Belperchinov-Shabanski "Cade" <cade\@noxrun.com> 
+           http://cade.noxrun.com
 END
 
 my @opt_fields;
@@ -59,6 +65,7 @@ my $opt_sample;
 my $opt_head;
 my $opt_tail;
 my $opt_skip;
+my $opt_strip_whitespace;
 
 my @opt_sort_fields;
 my $opt_sort_reverse;
@@ -73,76 +80,84 @@ while( @ARGV )
     push @args, @ARGV;
     last;
     }
-  if( /-f/ )
+  if( /^-f/ )
     {
     @opt_fields = shift;
     next;
     }
-  if( /-0/ )
+  if( /^-0/ )
     {
     $opt_base = 0;
     next;
     }
-  if( /-d/ )
+  if( /^-(d|D)/ )
     {
     my $pat = shift();
-    $opt_regexp = qr/$pat/;
+    $pat =~ s/([^0-9_a-zA-Z])/\\$1/g if $1 eq 'D';
+    eval
+      {
+      $opt_regexp = qr/$pat/;
+      };
+    if( $@ )
+      {
+      my $err = $@;
+      $err =~ s/ at .+//s;
+      die "invalid delimiter regexp [$pat] error [$err]\n";
+      }
     next;
     }
-  if( /-D/ )
-    {
-    my $pat = shift();
-    $pat =~ s/([^0-9_a-zA-Z])/\\$1/g;
-    $opt_regexp = qr/$pat/;
-    next;
-    }
-  if( /-n/ )
+  if( /^-n/ )
     {
     $opt_nop++;
     next;
     }
-  if( /-j/ )
+  if( /^-j/ )
     {
     $opt_join = shift();
     next;
     }
-  if( /-J/ )
+  if( /^-J/ )
     {
     $opt_join = ' <|> ';
     next;
     }
-  if( /-a/ )
+  if( /^-a/ )
     {
     $opt_sample++;
     $opt_head = 8;
     next;
     }
-  if( /-s/ )
+  if( /^-p/ )
+    {
+    $opt_strip_whitespace++;
+    next;
+    }
+  if( /^-s/ )
     {
     @opt_sort_fields = shift;
     next;
     }
-  if( /-r/ )
+  if( /^-r/ )
     {
     $opt_sort_reverse++;
     next;
     }
-  if( /-n/ )
+  if( /^-n/ )
     {
     $opt_sort_numeric++;
     next;
     }
-  if( /-e/ )
+  if( /^-e/ )
     {
     $opt_head = shift();
     next;
     }
-  if( /-t/ )
+  if( /^-t/ )
     {
     $opt_tail = shift();
     next;
     }
-  if( /-k/ )
+  if( /^-k/ )
     {
     $opt_skip++;
     next;
@@ -187,6 +202,7 @@ sub flat_sample
   my $x;
   while(<>)
     {
+    s/^\s+//, s/\s+$// if $opt_strip_whitespace;
     chomp;
     next if $opt_skip > 0 and ! /\S/;
 
@@ -207,6 +223,7 @@ sub flat_cut
 {
   while(<>)
     {
+    s/^\s+//, s/\s+$// if $opt_strip_whitespace;
     next if $opt_skip > 0 and ! /\S/;
 
     print(), next if $opt_nop;
@@ -228,6 +245,7 @@ sub sort_cut
   my @data;
   while(<>)
     {
+    s/^\s+//, s/\s+$// if $opt_strip_whitespace;
     next if $opt_skip > 0 and ! /\S/;
 
     my @row = split /$opt_regexp/, $_;
