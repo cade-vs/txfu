@@ -2,8 +2,11 @@
 ##############################################################################
 ##
 ##  GREPW -- find set of words in a file or line(s)
-##  2025 (c) Vladi Belperchinov-Shabanski "Cade" <cade@noxrun.com> 
-##                                         http://cade.noxrun.com
+##           this is parh of the TXFU collection of tools
+##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+##                <cade@noxrun.com>
+##          http://cade.noxrun.com
+##
 ##  LICENSE: GPLv2
 ##
 ##############################################################################
@@ -32,6 +35,8 @@ END
 my $opt_debug;
 my $opt_dirs;
 my $opt_verbose;
+
+die $HELP unless @ARGV;
 
 our @args;
 our @arg_files;
@@ -63,8 +68,7 @@ while( @ARGV )
     }
   if( /^(--?h(elp)?|help)$/io )
     {
-    print $HELP;
-    exit;
+    die $HELP;
     }
   push @args, $_;
   }
@@ -83,7 +87,7 @@ for my $f ( @arg_files )
   else
     {
     push @files, $f;
-    }  
+    }
   }
 
 find_words( \@words, $_ ) for @files;
@@ -110,6 +114,6 @@ sub find_words
       print "$fname:$.\t$_\n";
       }
     }
-  
-  
+
+
 }

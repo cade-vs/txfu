@@ -1,4 +1,16 @@
 #!/usr/bin/perl
+##############################################################################
+##
+##  PAVG -- find average number in a series of numbers
+##          this is parh of the TXFU collection of tools
+##
+##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+##                <cade@noxrun.com>
+##          http://cade.noxrun.com
+##
+##  LICENSE: GPLv2
+##
+##############################################################################
 use strict;
 
 my $sum;
