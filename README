@@ -1,0 +1,233 @@
+==============================================================================
+  txfu -- text processing tools
+==============================================================================
+
+txfu is a small collection of text-processing tools -- line-oriented filters
+in the Unix tradition, including alternates of the usual ones such as grep and
+cut, plus a few stream reducers for quick numeric summaries.
+
+All tools are plain Perl scripts. They read from standard input or from file
+arguments, write to standard output, and compose cleanly in pipelines.
+
+AUTHOR
+------------------------------------------------------------------------------
+
+2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+<cade@noxrun.com> -- http://cade.noxrun.com/projects/txfu
+
+
+TOOLS
+------------------------------------------------------------------------------
+
+  grepw    Print lines that contain ALL of the given words (AND-grep)
+  pcut     Extract / reorder fields -- an enhanced cut with sort,
+           sample, and head/tail
+  psum     Sum a stream of numbers
+  pavg     Average a stream of numbers
+  pmed     Median (with min / max) of a stream of numbers
+
+
+INSTALL
+------------------------------------------------------------------------------
+
+Clone the repository, make the scripts executable, and put them somewhere on
+your PATH:
+
+    git clone https://github.com/cade-vs/txfu.git
+    cd txfu
+    chmod +x grepw pcut psum pavg pmed
+    cp grepw pcut psum pavg pmed ~/bin/      # or /usr/local/bin
+
+
+DEPENDENCIES
+------------------------------------------------------------------------------
+
+  * psum, pavg, pmed, pcut -- pure Perl, no non-core modules required.
+  * grepw -- requires Data::Tools (used for recursive directory walking):
+
+        cpanm Data::Tools
+
+
+==============================================================================
+  grepw
+==============================================================================
+
+Find a set of words in a file or in lines. Unlike plain grep, grepw prints a
+line only when it matches EVERY word given -- the words act as an AND of
+patterns, in any order. Each word is treated as a regular expression.
+
+  usage: grepw <options> word word(s) ... -- file file(s)...
+
+Options:
+
+    -v        verbose, use first for full info
+    -d        debug mode (repeatable)
+    -r        recursive, descend into directories
+    --        end of options and words; files/dirs follow
+    -h        this help
+    --help    the same
+
+  * Search words and target files/directories are separated by "--".
+  * The separator may also be written as "+", "/", or "---" (two or more
+    dashes).
+  * Options cannot be grouped: -dr is invalid -- use -d -r.
+  * Binary files are skipped automatically (lines containing NUL).
+
+Output is one line per match, in the form:
+
+    filename:lineno<TAB>matching line
+
+Examples:
+
+    # lines containing BOTH "error" and "timeout"
+    grepw error timeout -- /var/log/syslog
+
+    # both words, anywhere in the C++ sources
+    grepw debug print / *.cpp *.h
+
+    # recurse a tree, lines with both TODO and FIXME
+    grepw -r TODO FIXME -- src/
+
+    # his classic
+    grepw power button + /etc/ /usr/etc/
+
+
+==============================================================================
+  pcut
+==============================================================================
+
+A more capable cut. Splits each line on a delimiter and prints selected
+fields, with optional reordering, ranges, sorting, head/tail, and a sample
+mode for discovering column numbers.
+
+  usage: pcut <options> <input files, or nothing to read stdin>
+
+Options:
+
+    -f fields   fields to print, e.g. -f 1,5,7-11,2
+    -0          0-based field indexes (default starts at 1, like cut)
+    -d regexp   delimiter as a regular expression (default: whitespace, \s+)
+    -D delim    delimiter as a fixed string (auto-escaped)
+    -j jstr     join string between output fields (default: TAB)
+    -J          use the visual join string ' <|> '
+    -p          strip leading/trailing whitespace from each line first
+    -k          skip blank (whitespace-only) INPUT lines
+    -k -k       given twice, also skip blank OUTPUT lines
+    -s fields   sort output by these fields (may differ from -f)
+    -r          reverse the sort
+    -a          sample: show an ASCII table of the first lines with indexes
+    -e N        head: output only the first N lines
+    -t N        tail: output only the last N lines
+    -i N        skip (ignore) the first N input lines
+    -n          no-op: print input unmodified
+    --          end of options; remaining arguments are filenames
+    -h, --help  this help
+
+Field syntax
+............
+
+-f (and -s) take a comma-separated list of field numbers and ranges:
+
+    5,1-3,9     ->  fields 5, 1, 2, 3, 9
+    1-3         ->  fields 1, 2, 3   (dash or .. / ... both work: 1..3)
+    15-         ->  field 15 to end  (open-ended; capped at 1024)
+
+Indexes start at 1 by default (as in cut); pass -0 to count from 0.
+
+Sample mode
+...........
+
+-a reads the first few lines, splits them, and prints a bordered table with a
+header row of column indexes -- handy for finding the field numbers you want
+without retyping the command. A later -e N (placed after -a) changes how many
+lines are sampled.
+
+Examples
+........
+
+    # PID and full command from ps (field 2, then 11 to end)
+    ps aux | pcut -f 2,11-
+
+    # username and login shell from /etc/passwd (colon-delimited)
+    pcut -D : -f 1,7 /etc/passwd
+
+    # discover columns in a messy file
+    pcut -a data.txt
+
+    # first three CSV columns, joined with " | "
+    pcut -D , -f 1-3 -j ' | ' data.csv
+
+    # fields 1 and 3, sorted by field 3, reversed
+    pcut -f 1,3 -s 3 -r data.txt
+
+
+==============================================================================
+  psum / pavg / pmed
+==============================================================================
+
+Three tiny stream reducers. Each reads numbers from standard input or from
+file arguments (one number per line works best), ignores lines that contain
+no digits, and prints a single summary line of space-separated columns.
+
+  psum -- sum:
+
+      <sum>   <count>   <lines>
+
+  pavg -- average:
+
+      <average>   <sum>   <count>   <lines>
+
+  pmed -- median, with extremes:
+
+      <median>   <min>   <max>   <count>   <lines>
+
+In every case "count" is the number of numeric lines used and "lines" is the
+total number of input lines read (the difference tells you how many
+non-numeric lines were skipped).
+
+Examples:
+
+    # sum the third whitespace field of a log
+    pcut -f 3 access.log | psum
+
+    # average of 1..100  ->  50.5 ...
+    seq 1 100 | pavg
+
+    # median response time straight from a file
+    pmed times.txt
+
+Notes:
+
+  * Feed one number per line; each line is taken in numeric context, so a
+    leading number is what counts.
+  * pavg divides by the numeric count -- an input with no numeric lines will
+    fail with a division-by-zero error.
+  * For an even number of values, pmed returns the upper of the two middle
+    values rather than their average.
+
+
+NOTES & CURRENT LIMITATIONS
+------------------------------------------------------------------------------
+
+A few pcut options behave differently from the embedded help, or depend on
+others, in the current version:
+
+  * -e (head) and -t (tail) take effect only when -s (sort) is also given;
+    without -s the output is produced in a streaming pass that does not trim.
+  * Sorting is string comparison (with -r to reverse). A numeric sort is not
+    currently selectable.
+  * -d is consumed as the regexp-delimiter option, so it does not toggle
+    debug output as the help text suggests.
+  * -n selects no-op passthrough (print input unmodified).
+
+These are worth keeping in mind until the option handling is reworked.
+
+
+LICENSE
+------------------------------------------------------------------------------
+
+GPLv2.
+
+
+------------------------------------------------------------------------------
+eof
