@@ -1,0 +1,115 @@
+#!/usr/bin/perl
+##############################################################################
+##
+##  GREPW -- find set of words in a file or line(s)
+##  2025 (c) Vladi Belperchinov-Shabanski "Cade" <cade@noxrun.com> 
+##                                         http://cade.noxrun.com
+##  LICENSE: GPLv2
+##
+##############################################################################
+use strict;
+
+use Data::Tools;
+
+our $HELP = <<END;
+usage: $0 <options> word word(s) ... -- file file(s)...
+options:
+    -v        -- verbose, should be used first for full info
+    -d        -- debug mode, multiple use is ok
+    -r        -- recursive, traverse directories
+    --        -- end of options and words, files and dirs follow
+    -h        -- prints this help message
+    --help    -- the same
+notes:
+  * search words and target files or directories are separated by "--"
+  * words/files can be also separated by "+", "/", "---"
+  * options cannot be grouped: -dr is invalid, correct is: -d -r
+examples:
+  grepw  power button  +  /etc/ /usr/etc/
+  grepw  debug print   /  *.cpp *.h
+END
+
+my $opt_debug;
+my $opt_dirs;
+my $opt_verbose;
+
+our @args;
+our @arg_files;
+while( @ARGV )
+  {
+  $_ = shift;
+  if( /^(\/|\+|--+)$/io )
+    {
+    @arg_files = @ARGV;
+    last;
+    }
+  if( /^-v/ )
+    {
+    $opt_verbose++;
+    print "option: verbose\n";
+    next;
+    }
+  if( /^-r/ )
+    {
+    $opt_dirs++;
+    print "option: recursive\n" if $opt_verbose;
+    next;
+    }
+  if( /^-d/ )
+    {
+    $opt_debug++;
+    print "option: debug level increased to [$opt_debug]\n" if $opt_verbose;
+    next;
+    }
+  if( /^(--?h(elp)?|help)$/io )
+    {
+    print $HELP;
+    exit;
+    }
+  push @args, $_;
+  }
+
+my @words = @args;
+
+my @files;
+for my $f ( @arg_files )
+  {
+  if( -d $f )
+    {
+    next unless $opt_dirs;
+    my $fs = fftwalk( FFT_FILES | FFT_SYMF, "$f/." );
+    push @files, @$fs;
+    }
+  else
+    {
+    push @files, $f;
+    }  
+  }
+
+find_words( \@words, $_ ) for @files;
+
+
+
+sub find_words
+{
+  my $words = shift;
+  my $fname = shift;
+
+  open my $fi, '<', $fname;
+  while( <$fi> )
+    {
+    chomp;
+    return if /\000/; # skip binary files
+    my $mc;
+    for my $w ( @$words )
+      {
+      $mc++ if /$w/;
+      }
+    if( $mc == @$words )
+      {
+      print "$fname:$.\t$_\n";
+      }
+    }
+  
+  
+}

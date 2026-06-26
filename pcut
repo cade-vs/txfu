@@ -28,6 +28,7 @@ options:
     -e N      -- print first N lines only (head)
     -t N      -- print last N lines only (tail)
     -h        -- help, prints this screen
+    -i N      -- skip first N lines from the input
     --        -- end of options
 notes:
   * fields indexes start from 1 unless -0 is given
@@ -39,9 +40,9 @@ notes:
              10,-4    -- fields 10,0,1,2,3,4
              15-,4    all fields from 15 to the end and then field 4
   * fields ranges can use either dash (-) or multi dots (..), (...), etc. ;)
-  * -a will override all of the rest options, idea is to check indexes 
+  * -a will override all of the rest options, idea is to check indexes
              without losing current command line
-  * -e and -t can be used simultaneously but they will limit head and tail 
+  * -e and -t can be used simultaneously but they will limit head and tail
              parts from the same stream, not the head part of the tail or the
              tail part of the head...
   * -e is cheap and fast
@@ -52,8 +53,8 @@ notes:
 issues/todo:
   * -e and -t should use the least required memory
 author:
-  2025 (c) Vladi Belperchinov-Shabanski "Cade" <cade\@noxrun.com> 
-           http://cade.noxrun.com
+  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade" <cade\@noxrun.com>
+                http://cade.noxrun.com
 END
 
 my @opt_fields;
@@ -64,7 +65,8 @@ my $opt_base = 1;
 my $opt_sample;
 my $opt_head;
 my $opt_tail;
-my $opt_skip;
+my $opt_skip_wl; # skip whitespace lines
+my $opt_skip; # skip first lines
 my $opt_strip_whitespace;
 
 my @opt_sort_fields;
@@ -159,7 +161,13 @@ while( @ARGV )
     }
   if( /^-k/ )
     {
-    $opt_skip++;
+    $opt_skip_wl++;
+    next;
+    }
+  if( /^-i/ )
+    {
+    $opt_skip = shift;
+    $opt_skip = 0 if $opt_skip <= 0; # skip negative or non-digit arg
     next;
     }
   if( /^-d/ )
@@ -176,15 +184,15 @@ while( @ARGV )
   push @args, $_;
   }
 
-die "$0: missing fields list, use -f\n" unless @opt_fields;
+die "$0: missing fields list, use -f\n" unless @opt_fields or $opt_sample;
 
 @opt_fields      = parse_fields( shift( @opt_fields      ) );
 @opt_sort_fields = parse_fields( shift( @opt_sort_fields ) );
 
-if( $opt_base ) 
-  { 
-  $_-- for @opt_fields; 
-  $_-- for @opt_sort_fields; 
+if( $opt_base )
+  {
+  $_-- for @opt_fields;
+  $_-- for @opt_sort_fields;
   }
 
 #-----------------------------------------------------------------------------
@@ -202,9 +210,10 @@ sub flat_sample
   my $x;
   while(<>)
     {
+    next if $opt_skip-- > 0;
     s/^\s+//, s/\s+$// if $opt_strip_whitespace;
     chomp;
-    next if $opt_skip > 0 and ! /\S/;
+    next if $opt_skip_wl > 0 and ! /\S/;
 
     my @row = split /$opt_regexp/, $_;
     push @res, \@row;
@@ -212,7 +221,7 @@ sub flat_sample
     $x = $n if $n > $x;
     last if ++$c >= $opt_head;
     }
-  
+
   unshift @res, [ $opt_base ? 1 .. $x : 0 .. $x - 1 ];
 
   print format_ascii_table( \@res );
@@ -223,8 +232,9 @@ sub flat_cut
 {
   while(<>)
     {
+    next if $opt_skip-- > 0;
     s/^\s+//, s/\s+$// if $opt_strip_whitespace;
-    next if $opt_skip > 0 and ! /\S/;
+    next if $opt_skip_wl > 0 and ! /\S/;
 
     print(), next if $opt_nop;
 
@@ -232,7 +242,7 @@ sub flat_cut
 
     # check if output has non-whitespace text
     my $skip_blank = join '', @row;
-    next if $opt_skip > 1 and $skip_blank !~ /\S/;
+    next if $opt_skip_wl > 1 and $skip_blank !~ /\S/;
 
     print join $opt_join, @row;
     print "\n";
@@ -245,14 +255,15 @@ sub sort_cut
   my @data;
   while(<>)
     {
+    next if $opt_skip-- > 0;
     s/^\s+//, s/\s+$// if $opt_strip_whitespace;
-    next if $opt_skip > 0 and ! /\S/;
+    next if $opt_skip_wl > 0 and ! /\S/;
 
     my @row = split /$opt_regexp/, $_;
     push @data, \@row, next if $opt_nop;
 
     my @map;
-    $map[$_]++ for ( @opt_fields, @opt_sort_fields ); 
+    $map[$_]++ for ( @opt_fields, @opt_sort_fields );
     for( my $c = 0; $c < @row; $c++ )
       {
       # keeps only data needed for output and for sorting
@@ -261,7 +272,7 @@ sub sort_cut
 
     # check if output has non-whitespace text
     my $skip_blank = join '', @row[@opt_fields];
-    next if $opt_skip > 1 and $skip_blank !~ /\S/;
+    next if $opt_skip_wl > 1 and $skip_blank !~ /\S/;
 
     push @data, \@row;
     }
@@ -301,7 +312,7 @@ sub parse_fields
     push @res, 0+$1     if /^\s*(\d+)\s*$/;
     push @res, $1||$3 ? ($1||$opt_base)..($3||1024) : () if /^\s*(\d+)?(-|\.\.+)(\d+)?\s*$/;
     }
-  return @res;  
+  return @res;
 }
 
 #-----------------------------------------------------------------------------
@@ -329,7 +340,7 @@ sub format_ascii_table
   my @ws; # widths
   my $wt; # width total
   my $cs; # columns
-  
+
   for my $row ( @$data )
     {
     my $c = 0;
@@ -341,13 +352,13 @@ sub format_ascii_table
       }
     $cs = $c if $c > $cs;
     }
-  
+
   $wt += $_ + 2 for @ws; # plus 2 for one char spacing around borders
   $wt += @ws + 1; # plus border chars
 
   my $sep = '+' . ( '-' x ( $wt - 2 ) ) . '+' . "\n";
   my $tx;
-  
+
   my $r = 0;
   $tx .= $sep;
   for my $row ( @$data )
@@ -364,7 +375,7 @@ sub format_ascii_table
     $r++;
     }
   $tx .= $sep;
-  
+
   return $tx;
 }
 
