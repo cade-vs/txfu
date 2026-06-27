@@ -25,6 +25,7 @@ TOOLS
   psum     Sum a stream of numbers
   pavg     Average a stream of numbers
   pmed     Median (with min / max) of a stream of numbers
+  puniq    Shows only unique lines, without using sort, keeps the order
 
 
 INSTALL
@@ -204,6 +205,24 @@ Notes:
     fail with a division-by-zero error.
   * For an even number of values, pmed returns the upper of the two middle
     values rather than their average.
+
+==============================================================================
+  puniq
+==============================================================================
+
+Prints unique lines only but keeps the order and does not use sorting.
+It uses lookup memory and can produce only first or last seen lines.
+There is an option to map lines to sha1 lookups to reduce used lookup
+memory for data with long lines. However sha1 may increase used memory for
+short lines and in all cases will use more cpu.
+
+Examples:
+
+    # print unique messages in the order they are last seen:
+    puniq /var/log/messages -l
+
+    # /var/log/messages tend to have longer lines so reduce lookup memory:
+    puniq /var/log/messages -l -1
 
 
 NOTES & CURRENT LIMITATIONS

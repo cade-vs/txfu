@@ -1,0 +1,104 @@
+#!/usr/bin/perl
+##############################################################################
+##
+##  PUNIQ -- remove duplicate lines, preserving order
+##           this is part of the TXFU collection of tools.
+##           offers first or last seen lines in the output
+##
+##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+##                <cade@noxrun.com>
+##          http://cade.noxrun.com
+##
+##  LICENSE: GPLv2
+##
+##############################################################################
+use strict;
+
+$| = 1;
+
+#-----------------------------------------------------------------------------
+
+our $HELP = <<END;
+usage: $0 <options> <input files or nothing to read from stdin>
+options:
+    -l        -- leave last known lines, default keeps the first known
+    -1        -- uses less memory for long lines by mapping to sha1
+    -h        -- help, prints this screen
+    --        -- end of options
+notes:
+  * removes duplicate lines while preserving the order of the kept lines
+  * input is read from the listed files, or from stdin if none are given
+  * by default the first occurrence of each line is kept (first seen)
+       this mode is fast and uses memory just to lookup seen data
+  * -l keeps the last occurrence of each line instead (last seen)
+  * -l reads entire input in memory and is slower
+  * -1 reduces lookup memory for longer lines by mapping to sha1
+       however for very short lines, it will increase used memory
+       also will increase cpu usage and may be, inherently, not 100% correct
+author:
+  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade" <cade\@noxrun.com>
+                http://cade.noxrun.com
+END
+
+my $opt_last;
+my $opt_sha1;
+
+our @args;
+while( @ARGV )
+  {
+  $_ = shift;
+  if( /^--+$/io )
+    {
+    push @args, @ARGV;
+    last;
+    }
+  if( /^-l/ )
+    {
+    $opt_last++;
+    next;
+    }
+  if( /^-1/ )
+    {
+    $opt_sha1++;
+    next;
+    }
+  if( /^(--?h(elp)?|help)$/ )
+    {
+    print $HELP;
+    exit;
+    }
+  push @args, $_;
+  }
+
+@ARGV = @args;
+
+#-----------------------------------------------------------------------------
+
+require Digest::SHA1 if $opt_sha1;
+
+if( $opt_last )
+  {
+  my @lines;
+  my %last;
+  while( <> )
+    {
+    $last{ $_ } = scalar @lines;
+    push @lines, $_;
+    }
+  my $i = 0;
+  for my $line ( @lines )
+    {
+    print $line if $last{ $line } == $i;
+    $i++;
+    }
+  }
+else
+  {
+  my %seen;
+  while( <> )
+    {
+    print unless $seen{ $opt_sha1 ? Digest::SHA1::sha1( $_ ) : $_ }++;
+    }
+  }
+
+##############################################################################

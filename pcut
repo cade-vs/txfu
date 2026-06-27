@@ -196,6 +196,8 @@ while( @ARGV )
   push @args, $_;
   }
 
+@ARGV = @args;
+
 die "$0: missing fields list, use -f\n" unless @opt_fields or $opt_sample;
 
 @opt_fields      = parse_fields( shift( @opt_fields      ) );
