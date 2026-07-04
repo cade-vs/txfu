@@ -1,0 +1,169 @@
+#!/usr/bin/perl
+##############################################################################
+##
+##  PWC -- count lines, words, chars; with per-line and per-paragraph averages
+##         this is part of the TXFU collection of tools
+##
+##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+##                <cade@noxrun.com>
+##          http://cade.noxrun.com
+##
+##  LICENSE: GPLv2
+##
+##############################################################################
+use strict;
+
+
+# TODO:
+# add options handling
+# add most frequent words
+# add least frequent words
+#
+
+my $DEBUG    = $ENV{ 'DEBUG' } || 0;
+
+our $HELP = <<END;
+usage: $0 <options> <input files or nothing to read from stdin>
+options:
+    -v        -- verbose mode
+    -x        -- extended lexicographic analisys
+    -u        -- enables UTF-8, will count chars, not bytes as wc(1)
+    -d        -- debug mode
+    -h        -- help, prints this screen
+    --        -- end of options
+notes:
+  * without any options, will produce output similar to wc(1):
+      "lines  words  bytes"
+  * if -u is used, output will be:  "lines  words  chars"
+author:
+  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade" <cade\@noxrun.com>
+                http://cade.noxrun.com
+END
+
+my $opt_verbose;
+my $opt_lex;
+my $opt_utf8;
+
+our @args;
+while( @ARGV )
+  {
+  $_ = shift;
+  if( /^--+$/io )
+    {
+    push @args, @ARGV;
+    last;
+    }
+  if( /^-v/ )
+    {
+    $opt_verbose++;
+    next;
+    }
+  if( /^-x/ )
+    {
+    $opt_lex++;
+    $opt_verbose++;
+    next;
+    }
+  if( /^-u/ )
+    {
+    $opt_utf8++;
+    next;
+    }
+  if( /^-d/ )
+    {
+    $DEBUG++;
+    next;
+    }
+  if( /^(--?h(elp)?|help)$/io )
+    {
+    print $HELP;
+    exit;
+    }
+  push @args, $_;
+  }
+
+@ARGV = @args;
+
+my $lines;
+my $words;
+my $chars;
+my $paras;
+my $inpara;
+
+my %types;
+
+if( $opt_utf8 )
+  {
+  require Encode;
+  }
+
+while( <> )
+  {
+  $_ = Encode::decode( 'UTF-8', $_ ) if $opt_utf8;
+
+  $lines++;
+  $chars += length;
+  my @w = split ' ';
+  $words += @w;
+  if( /\S/ )
+    {
+    $paras++ unless $inpara;
+    $inpara = 1;
+    }
+  else
+    {
+    $inpara = 0;
+    }
+  for my $w ( @w )
+    {
+    $types{ $w }++
+    }
+  }
+
+
+my @types = keys %types;
+my $types = @types;
+
+my $hapax;
+$hapax += $types{ $_ } == 1 for @types;
+
+my $wpl = $lines ? $words / $lines : 0;
+my $cpl = $lines ? $chars / $lines : 0;
+my $lpp = $paras ? $lines / $paras : 0;
+my $wpp = $paras ? $words / $paras : 0;
+my $cpp = $paras ? $chars / $paras : 0;
+
+if( ! $opt_verbose )
+  {
+  print "$lines $words $chars\n";
+  exit;
+  }
+
+printf "%-16s %10d\n",   'lines',           $lines;
+printf "%-16s %10d\n",   'words',           $words;
+printf "%-16s %10d\n",   'chars',           $chars;
+printf "%-16s %10d\n",   'paragraphs',      $paras;
+print  "\n";
+
+printf "%-16s %10.2f\n", 'words/line',      $wpl;
+printf "%-16s %10.2f\n", 'chars/line',      $cpl;
+printf "%-16s %10.2f\n", 'lines/paragraph', $lpp;
+printf "%-16s %10.2f\n", 'words/paragraph', $wpp;
+printf "%-16s %10.2f\n", 'chars/paragraph', $cpp;
+print  "\n";
+
+if( ! $opt_lex )
+  {
+  exit;
+  }
+
+printf "%-20s %6d\n",   'unique words (types)', $types;
+printf "%-16s %10d\n",  'tokens (words)',       $words;
+printf "%-20s %6.3f\n", 'vocabulary richness',  $types / $words if $words > 0;
+printf "%-20s %6.3f\n", 'mean word frequency',  $words / $types if $types > 0;
+printf "%-20s %6d\n",   'hapax legomena',       $hapax;
+print  "\n";
+
+
+
+##############################################################################

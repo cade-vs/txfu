@@ -185,7 +185,6 @@ while( @ARGV )
   if( /^-d/ )
     {
     $DEBUG++;
-    print "OPT: DEBUG\n";
     next;
     }
   if( /^(--?h(elp)?|help)$/io )
