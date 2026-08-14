@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 ##############################################################################
 ##
-##  PAVG -- find median number in a series of numbers
-##          this is parh of the TXFU collection of tools
+##  PMED -- find median number in a series of numbers
+##          this is part of the TXFU collection of tools
 ##
 ##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
 ##                <cade@noxrun.com>

@@ -2,7 +2,7 @@
 ##############################################################################
 ##
 ##  GREPW -- find set of words in a file or line(s)
-##           this is parh of the TXFU collection of tools
+##           this is part of the TXFU collection of tools
 ##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
 ##                <cade@noxrun.com>
 ##          http://cade.noxrun.com
@@ -65,19 +65,19 @@ while( @ARGV )
     @arg_files = @ARGV;
     last;
     }
-  if( /^-v/ )
+  if( /^-v$/ )
     {
     $opt_verbose++;
     print "option: verbose\n";
     next;
     }
-  if( /^-r/ )
+  if( /^-r$/ )
     {
     $opt_dirs++;
     print "option: recursive\n" if $opt_verbose;
     next;
     }
-  if( /^-d/ )
+  if( /^-d$/ )
     {
     $opt_debug++;
     print "option: debug level increased to [$opt_debug]\n" if $opt_verbose;
@@ -87,6 +87,7 @@ while( @ARGV )
     {
     die $HELP;
     }
+  die "$0: unknown option [$_], use -h for help\n" if /^-/;
   push @args, $_;
   }
 

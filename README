@@ -21,13 +21,14 @@ AUTHOR
 TOOLS
 ------------------------------------------------------------------------------
 
-  grepw    Print lines that contain ALL of the given words (AND-grep)
-  pcut     Extract / reorder fields -- an enhanced cut with sort,
-           sample, and head/tail
-  psum     Sum a stream of numbers
-  pavg     Average a stream of numbers
-  pmed     Median (with min / max) of a stream of numbers
-  puniq    Shows only unique lines, without using sort, keeps the order
+  grepw      Print lines that contain ALL of the given words (AND-grep)
+  pcut       Extract / reorder fields -- an enhanced cut with sort,
+             sample, and head/tail
+  psum       Sum a stream of numbers
+  pavg       Average a stream of numbers
+  pmed       Median (with min / max) of a stream of numbers
+  puniq      Shows only unique lines, without using sort, keeps the order
+  pwakehost  Send a Wake-on-LAN magic packet to wake a host by MAC address
 
 
 INSTALL
@@ -38,17 +39,15 @@ your PATH:
 
     git clone https://github.com/cade-vs/txfu.git
     cd txfu
-    chmod +x grepw pcut psum pavg pmed
-    cp grepw pcut psum pavg pmed ~/bin/      # or /usr/local/bin
+    chmod +x grepw pcut psum pavg pmed puniq pwakehost
+    cp grepw pcut psum pavg pmed puniq pwakehost ~/bin/      # or /usr/local/bin
 
 
 DEPENDENCIES
 ------------------------------------------------------------------------------
 
-  * psum, pavg, pmed, pcut -- pure Perl, no non-core modules required.
-  * grepw -- requires Data::Tools (used for recursive directory walking):
-
-        cpanm Data::Tools
+  * All tools are pure Perl -- no non-core modules required.
+    (pwakehost uses only the core Socket module.)
 
 
 ==============================================================================
@@ -216,7 +215,8 @@ Prints unique lines only but keeps the order and does not use sorting.
 It uses lookup memory and can produce only first or last seen lines.
 There is an option to map lines to sha1 lookups to reduce used lookup
 memory for data with long lines. However sha1 may increase used memory for
-short lines and in all cases will use more cpu.
+short lines and in all cases will use more cpu. The sha1 mapping uses the
+core Digest::SHA module, so no extra CPAN modules are needed.
 
 Examples:
 

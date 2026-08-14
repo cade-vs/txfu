@@ -52,12 +52,12 @@ while( @ARGV )
     push @args, @ARGV;
     last;
     }
-  if( /^-l/ )
+  if( /^-l$/ )
     {
     $opt_last++;
     next;
     }
-  if( /^-1/ )
+  if( /^-1$/ )
     {
     $opt_sha1++;
     next;
@@ -67,6 +67,7 @@ while( @ARGV )
     print $HELP;
     exit;
     }
+  die "$0: unknown option [$_], use -h for help\n" if /^-/;
   push @args, $_;
   }
 
@@ -74,7 +75,7 @@ while( @ARGV )
 
 #-----------------------------------------------------------------------------
 
-require Digest::SHA1 if $opt_sha1;
+require Digest::SHA if $opt_sha1;
 
 if( $opt_last )
   {
@@ -97,7 +98,7 @@ else
   my %seen;
   while( <> )
     {
-    print unless $seen{ $opt_sha1 ? Digest::SHA1::sha1( $_ ) : $_ }++;
+    print unless $seen{ $opt_sha1 ? Digest::SHA::sha1( $_ ) : $_ }++;
     }
   }
 

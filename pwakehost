@@ -2,7 +2,7 @@
 ##############################################################################
 ##
 ##  PWAKEHOST -- sends wakeonlan packet to wake a machine by MAC address
-##          this is parh of the TXFU collection of tools
+##          this is part of the TXFU collection of tools
 ##
 ##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
 ##                <cade@noxrun.com>
@@ -18,7 +18,7 @@ my $mac  = $ARGV[0] or die "Usage: $0 MAC_ADDRESS [BROADCAST_IP] [PORT]\n";
 my $host = $ARGV[1] || '255.255.255.255';
 my $port = $ARGV[2] || 9;
 
-$mac =~ s/[^0-9a-fA-f]//g;
+$mac =~ s/[^0-9a-fA-F]//g;
 xx( "invalid MAC [$mac]", 22 ) unless $mac =~ /^[0-9a-fA-F]{12}$/;
 
 my $binmac;

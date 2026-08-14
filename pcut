@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 ##############################################################################
 ##
-##  PCUT -- find set of words in a file or line(s)
-##          this is parh of the TXFU collection of tools
+##  PCUT -- extract and reorder fields, an enhanced cut(1)
+##          this is part of the TXFU collection of tools
 ##
 ##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
 ##                <cade@noxrun.com>
@@ -94,17 +94,17 @@ while( @ARGV )
     push @args, @ARGV;
     last;
     }
-  if( /^-f/ )
+  if( /^-f$/ )
     {
     @opt_fields = shift;
     next;
     }
-  if( /^-0/ )
+  if( /^-0$/ )
     {
     $opt_base = 0;
     next;
     }
-  if( /^-(d|D)/ )
+  if( /^-(d|D)$/ )
     {
     my $pat = shift();
     $pat =~ s/([^0-9_a-zA-Z])/\\$1/g if $1 eq 'D';
@@ -120,69 +120,69 @@ while( @ARGV )
       }
     next;
     }
-  if( /^-n/ )
+  if( /^-n$/ )
     {
     $opt_nop++;
     next;
     }
-  if( /^-j/ )
+  if( /^-j$/ )
     {
     $opt_join = shift();
     next;
     }
-  if( /^-J/ )
+  if( /^-J$/ )
     {
     $opt_join = ' <|> ';
     next;
     }
-  if( /^-a/ )
+  if( /^-a$/ )
     {
     $opt_sample++;
     $opt_head = 8;
     next;
     }
-  if( /^-p/ )
+  if( /^-p$/ )
     {
     $opt_strip_whitespace++;
     next;
     }
-  if( /^-s/ )
+  if( /^-s$/ )
     {
     @opt_sort_fields = shift;
     next;
     }
-  if( /^-r/ )
+  if( /^-r$/ )
     {
     $opt_sort_reverse++;
     next;
     }
-  if( /^-n/ )
+  if( /^-n$/ )
     {
     $opt_sort_numeric++;
     next;
     }
-  if( /^-e/ )
+  if( /^-e$/ )
     {
     $opt_head = shift();
     next;
     }
-  if( /^-t/ )
+  if( /^-t$/ )
     {
     $opt_tail = shift();
     next;
     }
-  if( /^-k/ )
+  if( /^-k$/ )
     {
     $opt_skip_wl++;
     next;
     }
-  if( /^-i/ )
+  if( /^-i$/ )
     {
     $opt_skip = shift;
     $opt_skip = 0 if $opt_skip <= 0; # skip negative or non-digit arg
     next;
     }
-  if( /^-d/ )
+  if( /^-d$/ )
     {
     $DEBUG++;
     next;
@@ -192,6 +192,7 @@ while( @ARGV )
     print $HELP;
     exit;
     }
+  die "$0: unknown option [$_], use -h for help\n" if /^-/;
   push @args, $_;
   }
 
