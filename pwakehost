@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+##############################################################################
+##
+##  PWAKEHOST -- sends wakeonlan packet to wake a machine by MAC address
+##          this is parh of the TXFU collection of tools
+##
+##  2025-2026 (c) Vladi Belperchinov-Shabanski "Cade"
+##                <cade@noxrun.com>
+##          http://cade.noxrun.com
+##
+##  LICENSE: GPLv2
+##
+##############################################################################
+use strict;
+use Socket;
+
+my $mac  = $ARGV[0] or die "Usage: $0 MAC_ADDRESS [BROADCAST_IP] [PORT]\n";
+my $host = $ARGV[1] || '255.255.255.255';
+my $port = $ARGV[2] || 9;
+
+$mac =~ s/[^0-9a-fA-f]//g;
+xx( "invalid MAC [$mac]", 22 ) unless $mac =~ /^[0-9a-fA-F]{12}$/;
+
+my $binmac;
+$binmac .= chr(hex($_)) for $mac =~ /([0-9a-fA-F]{2})/g;
+
+# Build packet: 0xFF x6 + MAC x16
+my $packet = ( "\xFF" x 6 ) . ( $binmac x 16 );
+
+# Send
+socket( my $sock, PF_INET, SOCK_DGRAM, getprotobyname( 'udp' ) ) or xx( "socket: $!", 1 );
+setsockopt( $sock, SOL_SOCKET, SO_BROADCAST, 1 ) or xx( "setsockopt: $!", 2 );
+my $addr = inet_aton( $host ) or xx( "inet_aton: $host", 3 );
+send( $sock, $packet, 0, pack( 'S n a4 x8', AF_INET, $port, $addr ) )  or xx( "send: $!", 4 );
+close( $sock );
+
+xx( "wake sent to $host:$port ($mac)", 0 );
+
+sub xx
+  {
+  print STDERR shift(), "\n";
+  exit shift();
+  }
+
