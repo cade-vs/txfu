@@ -14,7 +14,32 @@
 use strict;
 use Socket;
 
-my $mac  = $ARGV[0] or die "Usage: $0 MAC_ADDRESS [BROADCAST_IP] [PORT]\n";
+my $HELP = <<END;
+usage: $0 MAC_ADDRESS [BROADCAST_IP] [PORT]
+
+Sends a Wake-on-LAN "magic packet" to wake a machine by its MAC address.
+
+arguments:
+  MAC_ADDRESS   target hardware (MAC) address, 12 hex digits. any
+                non-hex separators are ignored, so all of these forms
+                are accepted and equivalent:
+                    00:11:22:33:44:55   -- colon separated
+                    00-11-22-33-44-55   -- dash separated
+                    0011.2233.4455      -- dot separated (Cisco style)
+                    001122334455        -- bare, no separators
+  BROADCAST_IP  broadcast address to send the packet to
+                (default 255.255.255.255)
+  PORT          UDP port to send to (default 9)
+
+examples:
+  $0 00:11:22:33:44:55
+  $0 00-11-22-33-44-55 192.168.0.255
+  $0 001122334455 192.168.0.255 7
+END
+
+my $mac = $ARGV[0];
+print( $HELP ), exit 0 if ! defined $mac or $mac =~ /^(--?h(elp)?|help)$/i;
+
 my $host = $ARGV[1] || '255.255.255.255';
 my $port = $ARGV[2] || 9;
 
